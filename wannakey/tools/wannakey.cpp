@@ -31,6 +31,12 @@
 #include <wkey/search_primes.h>
 
 using namespace wkey;
+static constexpr size_t KeyBits = 2048;
+static constexpr size_t SubKeyBits = (KeyBits + 1) / 2;
+
+static constexpr size_t KeyBytes = KeyBits / 8;
+static constexpr size_t SubKeyBytes = SubKeyBits / 8;
+
 
 static bool genRSAKey(BigIntTy const& N, BigIntTy const& P, uint32_t PrimeSize, const char* OutFile)
 {
@@ -109,6 +115,7 @@ int main(int argc, char** argv)
 
   std::cout << "Using PID " << pid << " and working directory " << wcry_path << "..." << std::endl;
 
+  /*
   std::cout << "Reading public key from " << public_key << "..." << std::endl;
   std::error_code EC;
   std::vector<uint8_t> keyData = readFile(public_key.c_str(), EC);
@@ -134,11 +141,15 @@ int main(int argc, char** argv)
   // Get N
   dumpHex("N", &keyData[idx], keyLen);
   const auto N = getInteger(&keyData[idx], keyLen);
+  */
+  BigIntTy N = 0;
+  size_t subkeyLen = SubKeyBytes;
 
   // Search for primes of subkeyLen bits, and check if they factor N!
   int ret = 1;
-  auto Err = walkProcessPrivateRWMemory(pid, [&] (uint8_t const* Buf, const size_t Size, uint8_t const*) {
-    const auto P = searchPrimes(Buf, Size, N, subkeyLen);
+  auto Err = walkProcessPrivateRWMemory(pid, [&] (uint8_t const* Buf, const size_t Size, uint8_t const* OrgMem) {
+	  printf("Found Prime at %p\n", OrgMem);
+    const auto P = searchPrimes(Buf, Size, N, subkeyLen, OrgMem);
     if (P == 0) {
       return true;
     }

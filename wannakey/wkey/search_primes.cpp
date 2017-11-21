@@ -33,77 +33,82 @@ using namespace wkey;
 #ifdef HAS_OMP_SUPPORT
 static BigIntTy searchPrimes_omp(uint8_t const* Data, size_t const Len, BigIntTy const& N, const size_t PrimeSize)
 {
-  if (Len < PrimeSize) {
-    return 0;
-  }
+	if (Len < PrimeSize) {
+		return 0;
+	}
 
-  size_t const LenStop = ((Len - PrimeSize) / PALIGN) * PALIGN;
-  // Visual studio has only support for OpenMP 2.0. We thus can't use #pragma
-  // omp cancel for...
-  bool Found = false;
-  BigIntTy Ret = 0;
+	size_t const LenStop = ((Len - PrimeSize) / PALIGN) * PALIGN;
+	// Visual studio has only support for OpenMP 2.0. We thus can't use #pragma
+	// omp cancel for...
+	bool Found = false;
+	BigIntTy Ret = 0;
 #pragma omp parallel for shared(Found) shared(Ret)
-  for (int64_t i = 0; i <= LenStop; i += PALIGN) {
-    if (!Found) {
-      uint8_t const* Block = &Data[i];
-      const double E = normalizedEntropy(Block, PrimeSize);
-      if (E >= MINIMAL_ENTROPY) {
-        auto P = getInteger(Block, PrimeSize, false);
-        if (N % P == 0) {
+	for (int64_t i = 0; i <= LenStop; i += PALIGN) {
+		if (!Found) {
+			uint8_t const* Block = &Data[i];
+			const double E = normalizedEntropy(Block, PrimeSize);
+			if (E >= MINIMAL_ENTROPY) {
+				auto P = getInteger(Block, PrimeSize, false);
+				if (N % P == 0) {
 #pragma omp critical
-          {
-            Ret = P;
-            Found = true;
-          }
-        }
-        P = getInteger(Block, PrimeSize, true);
-        if (N % P == 0) {
+					{
+						Ret = P;
+						Found = true;
+					}
+				}
+				P = getInteger(Block, PrimeSize, true);
+				if (N % P == 0) {
 #pragma omp critical
-          {
-            Ret = P;
-            Found = true;
-          }
-        }
-      }
-    }
-  }
-  
+					{
+						Ret = P;
+						Found = true;
+					}
+				}
+			}
+		}
+	}
 
-  return Ret;
+
+	return Ret;
 }
 #endif
 
-static BigIntTy searchPrimes_serial(uint8_t const* Data, size_t const Len, BigIntTy const& N, const size_t PrimeSize)
+static BigIntTy searchPrimes_serial(uint8_t const* Data, size_t const Len, BigIntTy const& N, const size_t PrimeSize, uint8_t const* OrgMem)
 {
-  size_t const LenStop = ((Len - PrimeSize) / PALIGN) * PALIGN;
-  for (size_t i = 0; i <= LenStop; i += PALIGN) {
-    uint8_t const* Block = &Data[i];
-    const double E = normalizedEntropy(Block, PrimeSize);
-    if (E >= MINIMAL_ENTROPY) {
-      auto P = getInteger(Block, PrimeSize, false);
-      if (N % P == 0) {
-        return P;
-      }
-      P = getInteger(Block, PrimeSize, true);
-      if (N % P == 0) {
-        return P;
-      }
-    }
-  }
-
-  return 0;
+	size_t const LenStop = ((Len - PrimeSize) / PALIGN) * PALIGN;
+	for (size_t i = 0; i <= LenStop; i += PALIGN) {
+		uint8_t const* Block = &Data[i];
+		const double E = normalizedEntropy(Block, PrimeSize);
+		if (E >= MINIMAL_ENTROPY) {
+			auto P = getInteger(Block, PrimeSize, false);
+			if (isPrime(P)) {
+				size_t Idx = std::distance(Data, Block);
+				uint8_t const* OrgPtr = OrgMem + Idx;
+				printf("Found Prime inv at %p\n", OrgPtr);
+				std::cout << "Prime: " << P << std::endl;
+			}
+			P = getInteger(Block, PrimeSize, true);
+			if (isPrime(P)) {
+				size_t Idx = std::distance(Data, Block);
+				uint8_t const* OrgPtr = OrgMem + Idx;
+				printf("Found Prime inv at %p\n", OrgPtr);
+				std::cout << "Prime: " << P << std::endl;
+			}
+		}
+	}
+	return 0;
 }
 
-BigIntTy wkey::searchPrimes(uint8_t const* Data, size_t const Len, BigIntTy const& N, const size_t PrimeSize)
+BigIntTy wkey::searchPrimes(uint8_t const* Data, size_t const Len, BigIntTy const& N, const size_t PrimeSize, uint8_t const* OrgMem)
 {
-  if (Len < PrimeSize) {
-    return 0;
-  }
+	if (Len < PrimeSize) {
+		return 0;
+	}
 
 #ifdef HAS_OMP_SUPPORT
-  if (omp_get_max_threads() > 1) {
-    return searchPrimes_omp(Data, Len, N, PrimeSize);
-  }
+	if (omp_get_max_threads() > 1) {
+		return searchPrimes_omp(Data, Len, N, PrimeSize);
+}
 #endif
-  return searchPrimes_serial(Data, Len, N, PrimeSize);
+	return searchPrimes_serial(Data, Len, N, PrimeSize, OrgMem);
 }

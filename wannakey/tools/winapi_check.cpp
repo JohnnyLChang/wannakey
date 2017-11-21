@@ -5,6 +5,7 @@
 #include <memory>
 #include <array>
 
+#include <wkey/bigint.h>
 #include <wkey/process.h>
 #include <wkey/tools.h>
 
@@ -224,10 +225,13 @@ static int generateKeyAndCheck()
   }
   if (verbose) {
     printf("P: %08X\n", P);
+	std::cout << "P: " << getInteger(P, SubKeyBytes) << std::endl;
     printf("Q: %08X\n", Q);
+	std::cout << "Q: " << getInteger(Q, SubKeyBytes) << std::endl;
   }
 
   printf("Key generated, zeroying data...\n");
+
   SecureZeroMemory(keyData, 4096);
 
   if (doCryptDestroy) {
@@ -325,7 +329,8 @@ int main(int argc, char** argv)
   }
   uint32_t Major = HIWORD(VI->dwProductVersionMS);
   uint32_t Minor = LOWORD(VI->dwProductVersionMS);
-  std::cout << "Windows " << Major << "." << Minor << "." << HIWORD(VI->dwProductVersionLS) << " (" << GetWinVersionStr(Major,Minor) << ") / " << getArchi() << " / " << ((ret == 0) ? "Leaks" : "No leak") << std::endl;
-
+  std::cout << "Windows " << Major << "." << Minor << "." << HIWORD(VI->dwProductVersionLS) << " (" << GetWinVersionStr(Major, Minor) << ") / " << getArchi() << " / " << ((ret == 0) ? "Leaks" : "No leak") << std::endl;
+  std::cout << GetCurrentProcessId() << std::endl;
+  system("pause"); 
   return ret;
 }

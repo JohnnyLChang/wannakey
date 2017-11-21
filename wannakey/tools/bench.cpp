@@ -85,7 +85,7 @@ static void bench(const char* Name, const size_t Size, double RatioRand, Func F)
 void do_bench(size_t const Size, double const RatioRand)
 {
   bench("search_primes", Size, RatioRand, [=](uint8_t const* Data, size_t const Len, BigIntTy const& N) {
-      searchPrimes(Data, Len, N, PrimeBytes);
+      searchPrimes(Data, Len, N, PrimeBytes, NULL);
   });
 }
 
