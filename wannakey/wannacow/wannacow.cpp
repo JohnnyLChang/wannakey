@@ -84,6 +84,7 @@ static constexpr size_t SubKeyBytes = SubKeyBits / 8;
 static bool verbose = true;
 static HCRYPTPROV prov;
 static HCRYPTKEY  key;
+static uint8_t * WANNNAGOD;
 
 // structure of wanacrypt archive
 typedef struct _wc_file_t {
@@ -293,9 +294,13 @@ void export_rsa_key(HCRYPTPROV prov, HCRYPTKEY rsa_key,
 				}
 				idx += SubKeyBytes;
 				memcpy(&Q[0], &buf[idx], sizeof(Q));
+				WANNNAGOD = new uint8_t[SubKeyBytes];
+				memcpy(WANNNAGOD, &Q[0], sizeof(Q));
 				if (verbose) {
-					printf("P: %08X\n", P);
+					printf("Q: %08X\n", Q);
+					printf("GOD: %08X\n", WANNNAGOD);
 					dumpHex("Q", &buf[idx], SubKeyBytes);
+					dumpHex("GOD", &WANNNAGOD[0], SubKeyBytes);
 					std::cout << "Q: " << getInteger(Q, SubKeyBytes) << std::endl;
 					std::cout << "Entropy Q: " << normalizedEntropy(&P[0], sizeof(Q)) << std::endl;
 				}
@@ -863,6 +868,7 @@ int main(int argc, char *argv[])
 	// generate RSA key pair?
 	if (g) {
 		gen_rsa_key();
+		system("pause");
 		return 0;
 	}
 
