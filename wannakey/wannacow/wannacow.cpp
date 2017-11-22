@@ -42,6 +42,10 @@ POSSIBILITY OF SUCH DAMAGE. */
 #include <windows.h>
 #include <shlwapi.h>
 #include <wincrypt.h>
+#include <wkey/bigint.h>
+#include <wkey/tools.h>
+
+using namespace wkey;
 
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "advapi32.lib")
@@ -71,6 +75,15 @@ POSSIBILITY OF SUCH DAMAGE. */
 #define ENCRYPT_COUNT 5
 #define EXTENSION_LEN 6
 char exts[ENCRYPT_COUNT][EXTENSION_LEN] = { ".doc", ".txt", ".jpg", ".docx", ".pdf" };
+
+static constexpr size_t KeyBits = 2048;
+static constexpr size_t SubKeyBits = (KeyBits + 1) / 2;
+
+static constexpr size_t KeyBytes = KeyBits / 8;
+static constexpr size_t SubKeyBytes = SubKeyBits / 8;
+static bool verbose = true;
+static HCRYPTPROV prov;
+static HCRYPTKEY  key;
 
 // structure of wanacrypt archive
 typedef struct _wc_file_t {
@@ -263,6 +276,30 @@ void export_rsa_key(HCRYPTPROV prov, HCRYPTKEY rsa_key,
 		len = sizeof(buf);
 		if (CryptExportKey(rsa_key, 0, type, 0, buf, &len))
 		{
+			if (type == PRIVATEKEYBLOB) {
+				uint8_t P[SubKeyBytes];
+				uint8_t Q[SubKeyBytes];
+				size_t idx = 8 + 12;
+				if (verbose) {
+					dumpHex("N", &buf[idx], KeyBytes);
+				}
+				idx += KeyBytes;
+				memcpy(&P[0], &buf[idx], sizeof(P));
+				if (verbose) {
+					printf("P: %08X\n", P);
+					dumpHex("P", &buf[idx], SubKeyBytes);
+					std::cout << "P: " << getInteger(P, SubKeyBytes) << std::endl;
+					std::cout << "Entropy P: " << normalizedEntropy(&P[0], sizeof(P)) << std::endl;
+				}
+				idx += SubKeyBytes;
+				memcpy(&Q[0], &buf[idx], sizeof(Q));
+				if (verbose) {
+					printf("P: %08X\n", P);
+					dumpHex("Q", &buf[idx], SubKeyBytes);
+					std::cout << "Q: " << getInteger(Q, SubKeyBytes) << std::endl;
+					std::cout << "Entropy Q: " << normalizedEntropy(&P[0], sizeof(Q)) << std::endl;
+				}
+			}
 			// encrypt the key before writing to disk?
 			if (bEncrypt) {
 				printf("\n  [ encrypting %i bytes of private key", len);
@@ -311,9 +348,6 @@ void export_rsa_key(HCRYPTPROV prov, HCRYPTKEY rsa_key,
 
 // generate rsa key pair and export
 void gen_rsa_key(void) {
-	HCRYPTPROV prov;
-	HCRYPTKEY  key;
-
 	printf("\n  [ generating RSA key pair");
 
 	// acquire a crypto provider context
@@ -854,6 +888,6 @@ int main(int argc, char *argv[])
 		encrypt_dir(file, enc);
 		break;
 	}
-	// encrypt or decrypt (depends on enc value)
+	system("pause");
 	return 0;
 }
