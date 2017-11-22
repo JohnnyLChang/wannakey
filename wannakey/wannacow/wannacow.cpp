@@ -42,10 +42,6 @@ POSSIBILITY OF SUCH DAMAGE. */
 #include <windows.h>
 #include <shlwapi.h>
 #include <wincrypt.h>
-#include <wkey/bigint.h>
-#include <wkey/tools.h>
-
-using namespace wkey;
 
 #pragma comment(lib, "crypt32.lib")
 #pragma comment(lib, "advapi32.lib")
@@ -281,29 +277,12 @@ void export_rsa_key(HCRYPTPROV prov, HCRYPTKEY rsa_key,
 				uint8_t P[SubKeyBytes];
 				uint8_t Q[SubKeyBytes];
 				size_t idx = 8 + 12;
-				if (verbose) {
-					dumpHex("N", &buf[idx], KeyBytes);
-				}
 				idx += KeyBytes;
 				memcpy(&P[0], &buf[idx], sizeof(P));
-				if (verbose) {
-					printf("P: %08X\n", P);
-					dumpHex("P", &buf[idx], SubKeyBytes);
-					std::cout << "P: " << getInteger(P, SubKeyBytes) << std::endl;
-					std::cout << "Entropy P: " << normalizedEntropy(&P[0], sizeof(P)) << std::endl;
-				}
 				idx += SubKeyBytes;
 				memcpy(&Q[0], &buf[idx], sizeof(Q));
 				WANNNAGOD = new uint8_t[SubKeyBytes];
 				memcpy(WANNNAGOD, &Q[0], sizeof(Q));
-				if (verbose) {
-					printf("Q: %08X\n", Q);
-					printf("GOD: %08X\n", WANNNAGOD);
-					dumpHex("Q", &buf[idx], SubKeyBytes);
-					dumpHex("GOD", &WANNNAGOD[0], SubKeyBytes);
-					std::cout << "Q: " << getInteger(Q, SubKeyBytes) << std::endl;
-					std::cout << "Entropy Q: " << normalizedEntropy(&P[0], sizeof(Q)) << std::endl;
-				}
 			}
 			// encrypt the key before writing to disk?
 			if (bEncrypt) {
