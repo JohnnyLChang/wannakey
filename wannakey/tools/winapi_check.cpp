@@ -14,6 +14,9 @@ static bool doCryptDestroy = true;
 static bool doCryptReleaseCtx = true;
 static bool verbose = false;
 
+static HCRYPTPROV prov;
+static HCRYPTKEY keyUser;
+
 static constexpr size_t KeyBits = 2048;
 static constexpr size_t SubKeyBits = (KeyBits +1)/2;
 
@@ -170,9 +173,6 @@ static int searchPrimes(HANDLE hProc, uint8_t const* const P, uint8_t const* con
 
 static int generateKeyAndCheck()
 {
-  HCRYPTPROV prov;
-  HCRYPTKEY keyUser;
-
   if (!CryptAcquireContext(&prov,
         NULL, MS_ENH_RSA_AES_PROV, PROV_RSA_AES,
         CRYPT_VERIFYCONTEXT)) {

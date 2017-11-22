@@ -1,0 +1,6 @@
+C:/Users/river/Desktop/Study/wannakey/wannakey/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/river/Desktop/Study/wannakey/wannakey/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/river/Desktop/Study/wannakey/wannakey/build/wkey/CMakeFiles/wkey.dir
+C:/Users/river/Desktop/Study/wannakey/wannakey/build/tools/CMakeFiles/winapi_check.dir
+C:/Users/river/Desktop/Study/wannakey/wannakey/build/tools/CMakeFiles/wannakey.dir
+C:/Users/river/Desktop/Study/wannakey/wannakey/build/tools/CMakeFiles/bench.dir
